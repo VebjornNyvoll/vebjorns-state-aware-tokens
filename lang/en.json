@@ -69,10 +69,11 @@
   "VSAT.State.inCombat.Description": "Token is currently in active combat.",
   "VSAT.State.cpr.dead.Description": "CPR: actor explicitly marked as Dead.",
   "VSAT.State.cpr.dying.Description": "CPR: rolling a death save.",
-  "VSAT.State.cpr.rolling.Description": "CPR: any roll is in progress.",
   "VSAT.State.cpr.rolling.deathSave.Description": "CPR: a death save is in progress.",
-  "VSAT.State.cpr.rolling.handgun.Description": "CPR: rolling a handgun attack.",
-  "VSAT.State.cpr.rolling.shoulderArms.Description": "CPR: rolling a shoulder-arms attack.",
-  "VSAT.State.cpr.rolling.melee.Description": "CPR: rolling a melee attack.",
-  "VSAT.State.cpr.rolling.skill.Description": "CPR: rolling a skill check."
+  "VSAT.State.cpr.rolling.attack.Description": "CPR: rolling an attack (any weapon).",
+  "VSAT.State.cpr.rolling.initiative.Description": "CPR: rolling initiative.",
+  "VSAT.State.cpr.rolling.damage.Description": "CPR: rolling damage.",
+  "VSAT.State.cpr.rolling.stat.Description": "CPR: rolling a stat check (REF, BODY, etc.).",
+  "VSAT.State.cpr.rolling.role.Description": "CPR: rolling a role / interface ability.",
+  "VSAT.State.cpr.rolling.skill.Description": "CPR: rolling a skill check (any skill)."
 }
