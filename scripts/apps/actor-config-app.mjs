@@ -141,25 +141,52 @@ export class ActorConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
 }
 
 // Inject a header button on Actor sheets so GMs can open this app.
-Hooks.on("getHeaderControlsActorSheetV2", (app, controls) => {
-  if (!game.user.isGM) return;
-  controls.unshift({
-    label: game.i18n.localize("VSAT.ActorConfig.HeaderButton"),
-    action: "vsatOpenConfig",
-    icon: "fa-solid fa-masks-theater",
-    onClick: () => new ActorConfigApp(app.document).render({ force: true }),
-  });
-});
+//
+// Why renderActorSheet + DOM injection rather than getHeaderControls / getHeaderButtons:
+//   - getHeaderControls<ClassName> (v13 AppV2) and get<ClassName>HeaderButtons (v12) both
+//     fire ONLY for the EXACT class. Systems that subclass ActorSheet (CPR, dnd5e, pf2e,
+//     swade, ...) don't see hooks targeting the base class fire on their sheets.
+//   - renderActorSheet fires for every render of any actor sheet regardless of subclass,
+//     because Foundry walks the inheritance chain when emitting render hooks.
+//   - This is exactly the approach Item Piles, Theatre Inserts, and PopOut! use.
 
-// Backwards-compat for v12-style ActorSheet (non-V2): inject via getActorSheetHeaderButtons.
-Hooks.on("getActorSheetHeaderButtons", (app, buttons) => {
+Hooks.on("renderActorSheet", _injectHeaderButton);
+// v13 also fires renderActorSheetV2 for V2-based sheets. Cover both.
+Hooks.on("renderActorSheetV2", _injectHeaderButton);
+
+function _injectHeaderButton(app, html, _data) {
   if (!game.user.isGM) return;
-  // Avoid duplicate when V2 hook already fired.
-  if (buttons.some(b => b.class === "vsat-open-config")) return;
-  buttons.unshift({
-    label: game.i18n.localize("VSAT.ActorConfig.HeaderButton"),
-    class: "vsat-open-config",
-    icon:  "fa-solid fa-masks-theater",
-    onclick: () => new ActorConfigApp(app.document).render({ force: true }),
+
+  // html may be a jQuery object (v12) or an HTMLElement (v13). Normalise.
+  const root = (html instanceof HTMLElement) ? html
+              : (html?.[0] instanceof HTMLElement ? html[0] : null);
+  if (!root) return;
+
+  // Find the window's header (the .window-header bar with the title and close button).
+  // The actor sheet's HTML root is inside .window-content; the header is its sibling.
+  const windowApp = root.closest(".window-app") ?? app.element?.[0] ?? app.element;
+  if (!windowApp) return;
+  const header = windowApp.querySelector?.(".window-header") ?? null;
+  if (!header) return;
+
+  // Avoid duplicate injection on re-render.
+  if (header.querySelector(".vsat-open-config")) return;
+
+  // Build the button. Style it to match the other header anchors.
+  const a = document.createElement("a");
+  a.className = "vsat-open-config header-button";
+  a.title = game.i18n.localize("VSAT.ActorConfig.HeaderButton");
+  a.innerHTML = `<i class="fa-solid fa-masks-theater"></i> <span>${
+    game.i18n.localize("VSAT.ActorConfig.HeaderButton")
+  }</span>`;
+  a.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    new ActorConfigApp(app.document).render({ force: true });
   });
-});
+
+  // Insert before the close button so it sits inline with the other module buttons.
+  const close = header.querySelector('[data-action="close"], a.close, .header-button.close');
+  if (close) close.before(a);
+  else header.appendChild(a);
+}

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-04-29
+
+### Fixed
+
+- **Header button now appears on system-specific actor sheets.** v0.1.0 used `getHeaderControlsActorSheetV2` + `getActorSheetHeaderButtons` hooks, both of which only fire for the EXACT base sheet class. CPR (and most game systems) subclass `ActorSheet` (e.g. `CPRCharacterActorSheet`), so neither hook fired and the button was invisible. v0.1.1 switches to the `renderActorSheet` / `renderActorSheetV2` hooks (which fire for all actor sheets regardless of subclass) and injects the button via DOM manipulation — same pattern Theatre Inserts, PopOut!, and Item Piles use.
+
 ## [0.1.0] - 2026-04-29
 
 ### Added
