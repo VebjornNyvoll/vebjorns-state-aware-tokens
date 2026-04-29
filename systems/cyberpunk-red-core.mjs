@@ -51,104 +51,94 @@ function _classifyWeaponType(weaponType) {
 // ---------------------------------------------------------------------------
 // libWrapper-style patching of CPRRoll.prototype.roll
 
-let _cprRollClasses = null;
+/** CPR encapsulates CPRRoll inside its bundle — it's not on globalThis,
+ *  game.cpr, or CONFIG.Dice.rolls. So we can't patch CPRRoll.prototype.roll
+ *  directly. Instead we wrap the actor sheets' _onRoll(event) handler, which
+ *  is the entry point for every roll users initiate via the sheet. The event
+ *  carries data-roll-type and data-item-id attributes that tell us what
+ *  kind of roll is starting. We fire our ephemeral state immediately and
+ *  schedule a clear after the roll-display window passes. */
 
-/** Probe known places for CPR's roll classes. CPR ships as a bundled `cpr.js`
- *  so `import()` of source paths doesn't work. We look for the classes on
- *  globals / game.cpr / CONFIG.Dice.rolls. If CPR doesn't expose them, the
- *  ephemeral roll states stay disabled (persistent states still work). */
-function _probeCPRRollClasses() {
-  if (_cprRollClasses) return _cprRollClasses;
+const ROLL_TYPE_TO_STATE = {
+  deathsave:    "cpr.rolling.deathSave",
+  skill:        "cpr.rolling.skill",
+  // Attack subtypes — actual weaponType refines further to handgun/shoulderArms/melee.
+  attack:       "cpr.rolling.melee",         // fallback if weaponType unknown
+  aimed:        "cpr.rolling.melee",
+  autofire:     "cpr.rolling.melee",
+  suppressive:  "cpr.rolling.melee",
+};
 
-  // Common candidate locations
-  const candidates = {
-    CPRRoll:           globalThis.CPRRoll          ?? game.cpr?.rolls?.CPRRoll          ?? game.cpr?.CPRRoll,
-    CPRSkillRoll:      globalThis.CPRSkillRoll     ?? game.cpr?.rolls?.CPRSkillRoll     ?? game.cpr?.CPRSkillRoll,
-    CPRAttackRoll:     globalThis.CPRAttackRoll    ?? game.cpr?.rolls?.CPRAttackRoll    ?? game.cpr?.CPRAttackRoll,
-    CPRDeathSaveRoll:  globalThis.CPRDeathSaveRoll ?? game.cpr?.rolls?.CPRDeathSaveRoll ?? game.cpr?.CPRDeathSaveRoll,
-  };
+function _stateForSheetRoll(actor, event) {
+  const target = event?.currentTarget ?? event?.target;
+  const rollType = target?.dataset?.rollType?.toLowerCase();
+  if (!rollType) return null;
 
-  // Fallback: search CONFIG.Dice.rolls (CPR may register subclasses there)
-  if (!candidates.CPRRoll && Array.isArray(CONFIG.Dice?.rolls)) {
-    candidates.CPRRoll = CONFIG.Dice.rolls.find(r => r?.name === "CPRRoll");
+  // Attack rolls — refine by weapon type.
+  if (["attack", "aimed", "autofire", "suppressive"].includes(rollType)) {
+    const itemId = target.dataset.itemId;
+    const item = itemId ? actor?.items?.get(itemId) : null;
+    const weaponType = item?.system?.weaponType;
+    return _classifyWeaponType(weaponType) ?? ROLL_TYPE_TO_STATE[rollType];
   }
 
-  if (typeof candidates.CPRRoll !== "function") {
-    console.warn(`${MODULE_ID} | CPRRoll class not found; ephemeral roll-state detection disabled. ` +
-                 `Persistent states (wounded, unconscious, inCombat, etc.) still work.`);
-    return null;
-  }
-
-  _cprRollClasses = candidates;
-  return _cprRollClasses;
+  return ROLL_TYPE_TO_STATE[rollType] ?? null;
 }
 
-function _installRollWrap() {
-  const cprRolls = _probeCPRRollClasses();
-  if (!cprRolls?.CPRRoll) return false;
-
-  if (!globalThis.libWrapper?.register) {
-    console.warn(`${MODULE_ID} | libWrapper not available; falling back to direct prototype patch`);
-    const orig = cprRolls.CPRRoll.prototype.roll;
-    cprRolls.CPRRoll.prototype.roll = async function () {
-      const result = await orig.call(this);
-      _onRollComplete(this, cprRolls);
-      return result;
-    };
-    console.log(`${MODULE_ID} | CPRRoll.prototype.roll patched (direct, no libWrapper)`);
-    return true;
-  }
-
-  // Expose the class to a stable global so libWrapper has a string path target.
-  globalThis.__vsat_cpr = { Roll: cprRolls.CPRRoll };
-
-  libWrapper.register(
-    MODULE_ID,
-    "globalThis.__vsat_cpr.Roll.prototype.roll",
-    async function (wrapped, ...args) {
-      const result = await wrapped.apply(this, args);
-      _onRollComplete(this, cprRolls);
-      return result;
-    },
-    "WRAPPER"
-  );
-  console.log(`${MODULE_ID} | CPRRoll.prototype.roll wrapped via libWrapper`);
-  return true;
-}
-
-function _onRollComplete(cprRoll, cprRolls) {
-  // Identify the actor.
-  const actorId = cprRoll?.entityData?.actor;
-  const actor = actorId ? game.actors.get(actorId) : null;
-  if (!actor) return;
-
-  // Classify the roll into a state ID.
-  let stateId = null;
-  if (cprRoll instanceof cprRolls.CPRDeathSaveRoll) {
-    stateId = "cpr.rolling.deathSave";
-  } else if (cprRoll instanceof cprRolls.CPRAttackRoll) {
-    // Aimed/Autofire/Suppressive all extend CPRAttackRoll.
-    stateId = _classifyWeaponType(cprRoll.weaponType) ?? "cpr.rolling.melee";
-  } else if (cprRoll instanceof cprRolls.CPRSkillRoll) {
-    stateId = "cpr.rolling.skill";
-  }
-
-  if (!stateId) return;
-
-  // Mark as active for this actor; ephemeral states will time out via the engine.
+function _markRollActive(actor, stateId, durationMs = 2500) {
+  if (!actor || !stateId) return;
   let set = _activeRolls.get(actor.id);
   if (!set) { set = new Set(); _activeRolls.set(actor.id, set); }
   set.add(stateId);
-
-  // Trigger re-eval. The ephemeral state's durationMs in the engine handles cleanup.
-  scheduleReevaluate(actor, { source: "cpr-roll", stateId });
-
-  // Auto-clear after a reasonable window (in case the engine's ephemeral timer
-  // doesn't fire, e.g. if the engine cleared the state for higher priority).
+  scheduleReevaluate(actor, { source: "cpr-onRoll", stateId });
   setTimeout(() => {
     set.delete(stateId);
-    scheduleReevaluate(actor, { source: "cpr-roll-clear", stateId });
-  }, 2500);
+    scheduleReevaluate(actor, { source: "cpr-onRoll-clear", stateId });
+  }, durationMs);
+}
+
+/** Patch _onRoll on every CPR actor sheet class we can reach. Direct
+ *  prototype patching (not libWrapper) because each sheet class is a
+ *  unique target; libWrapper namespacing would be more verbose for no
+ *  real benefit. CPR is the only consumer of these methods. */
+function _installSheetRollWraps() {
+  const apps = game.cpr?.apps ?? {};
+  const SHEET_CLASSES = [
+    "CPRCharacterActorSheet",
+    "CPRMookActorSheet",
+    "CPRBlackIceActorSheet",
+    "CPRDemonActorSheet",
+  ];
+
+  let wrapped = 0;
+  for (const className of SHEET_CLASSES) {
+    const SheetClass = apps[className];
+    if (typeof SheetClass !== "function") continue;
+    const proto = SheetClass.prototype;
+    if (typeof proto._onRoll !== "function") continue;
+    if (proto.__vsatRollWrapped) continue;  // idempotent
+
+    const original = proto._onRoll;
+    proto._onRoll = async function (event) {
+      try {
+        const stateId = _stateForSheetRoll(this.actor, event);
+        if (stateId) _markRollActive(this.actor, stateId);
+      } catch (err) {
+        console.error(`${MODULE_ID} | error pre-detecting CPR roll:`, err);
+      }
+      return original.call(this, event);
+    };
+    proto.__vsatRollWrapped = true;
+    wrapped++;
+  }
+
+  if (wrapped > 0) {
+    console.log(`${MODULE_ID} | wrapped _onRoll on ${wrapped} CPR actor sheet class(es)`);
+    return true;
+  }
+
+  console.warn(`${MODULE_ID} | no CPR actor sheets found to wrap; ephemeral roll states disabled`);
+  return false;
 }
 
 function _hasActiveRoll(actor, stateId) {
@@ -159,8 +149,13 @@ function _hasActiveRoll(actor, stateId) {
 // State definitions
 
 function _isInCombat(actor) {
+  // Match if any combatant in any combat references this actor.
+  // Previously gated on c.active, but V12's Combat.active flag isn't always
+  // set when a combatant is added to the tracker — leading to false
+  // negatives for "I added them and clicked Begin Combat but the swap
+  // didn't fire". Treat any tracker membership as in-combat.
   return game.combats.some(c =>
-    c.active && c.combatants.some(cbt => cbt.actorId === actor.id)
+    c.combatants?.some(cbt => cbt.actorId === actor.id)
   );
 }
 
@@ -285,11 +280,8 @@ const STATES = [
 export async function installCPRShim(api) {
   if (game.system.id !== SYSTEM_ID) return false;
 
-  // Install the libWrapper-driven roll detector.
-  const wrapped = await _installRollWrap();
-  if (!wrapped) {
-    console.warn(`${MODULE_ID} | could not patch CPRRoll.prototype.roll; ephemeral roll states disabled`);
-  }
+  // Install the sheet-level _onRoll wrapper for ephemeral roll-state detection.
+  _installSheetRollWraps();
 
   // Register all the states.
   api.addSystemIntegration({
