@@ -24,6 +24,13 @@ import { scheduleReevaluate } from "../scripts/core/state-engine.mjs";
 
 const SYSTEM_ID = "cyberpunk-red-core";
 
+// IMPORTANT: hardcoded — do NOT use `${MODULE_ID}.systemEvent` at top level.
+// The STATES array below is built at module-load time, when MODULE_ID is still
+// in the temporal dead zone due to the circular import (module.mjs imports us,
+// we import module.mjs back). Touching MODULE_ID at top level throws
+// ReferenceError. Inside functions is fine because functions execute later.
+const SYSTEM_EVENT_HOOK = "vebjorns-state-aware-tokens.systemEvent";
+
 // Per-token transient marker for "currently rolling X". Cleared after durationMs.
 const _activeRolls = new Map(); // actorId -> Set<stateId>
 
@@ -165,7 +172,7 @@ const STATES = [
     ephemeral: true,
     durationMs: 3000,
     predicate: (actor) => _hasActiveRoll(actor, "cpr.rolling.deathSave"),
-    triggers: [{ hook: `${MODULE_ID}.systemEvent` }],
+    triggers: [{ hook: SYSTEM_EVENT_HOOK }],
     description: "VSAT.State.cpr.rolling.deathSave.Description",
     systemTag: "cpr",
   },
@@ -194,7 +201,7 @@ const STATES = [
     ephemeral: true,
     durationMs: 2000,
     predicate: (actor) => _hasActiveRoll(actor, "cpr.rolling.handgun"),
-    triggers: [{ hook: `${MODULE_ID}.systemEvent` }],
+    triggers: [{ hook: SYSTEM_EVENT_HOOK }],
     description: "VSAT.State.cpr.rolling.handgun.Description",
     systemTag: "cpr",
   },
@@ -204,7 +211,7 @@ const STATES = [
     ephemeral: true,
     durationMs: 2000,
     predicate: (actor) => _hasActiveRoll(actor, "cpr.rolling.shoulderArms"),
-    triggers: [{ hook: `${MODULE_ID}.systemEvent` }],
+    triggers: [{ hook: SYSTEM_EVENT_HOOK }],
     description: "VSAT.State.cpr.rolling.shoulderArms.Description",
     systemTag: "cpr",
   },
@@ -214,7 +221,7 @@ const STATES = [
     ephemeral: true,
     durationMs: 2000,
     predicate: (actor) => _hasActiveRoll(actor, "cpr.rolling.melee"),
-    triggers: [{ hook: `${MODULE_ID}.systemEvent` }],
+    triggers: [{ hook: SYSTEM_EVENT_HOOK }],
     description: "VSAT.State.cpr.rolling.melee.Description",
     systemTag: "cpr",
   },
@@ -224,7 +231,7 @@ const STATES = [
     ephemeral: true,
     durationMs: 1500,
     predicate: (actor) => _hasActiveRoll(actor, "cpr.rolling.skill"),
-    triggers: [{ hook: `${MODULE_ID}.systemEvent` }],
+    triggers: [{ hook: SYSTEM_EVENT_HOOK }],
     description: "VSAT.State.cpr.rolling.skill.Description",
     systemTag: "cpr",
   },
