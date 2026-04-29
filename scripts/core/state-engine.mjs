@@ -91,16 +91,38 @@ export function clearStates() {
 // ---------------------------------------------------------------------------
 // Evaluation — finds the winning state for a given actor
 
-/** Find the highest-priority state whose predicate returns true.
- *  Returns the StateDef or null. */
-export function evaluate(actor, ctx = {}) {
+/** Find all matching states, sorted by priority descending.
+ *  Returns an array (possibly empty). */
+export function evaluateAll(actor, ctx = {}) {
   const sorted = getRegisteredStates();
+  const matches = [];
   for (const state of sorted) {
     try {
-      if (state.predicate(actor, ctx)) return state;
+      if (state.predicate(actor, ctx)) matches.push(state);
     } catch (err) {
       console.error(`${MODULE_ID} | predicate error in state '${state.id}':`, err);
     }
+  }
+  return matches;
+}
+
+/** Returns true if a state has either a user-configured image OR explicit
+ *  apply directives — i.e. it can produce a visible change for this actor. */
+function _stateIsEffective(state, actor) {
+  const actorImages = actor.getFlag(MODULE_ID, "images") ?? {};
+  const userImage = actorImages[state.id];
+  if (userImage) return true;
+  if (state.apply && Object.keys(state.apply).length > 0) return true;
+  return false;
+}
+
+/** Find the highest-priority EFFECTIVE state (matches AND can apply).
+ *  States that match but have no image and no apply directives are skipped
+ *  — they don't block lower-priority states from winning visually. */
+export function evaluate(actor, ctx = {}) {
+  const matches = evaluateAll(actor, ctx);
+  for (const state of matches) {
+    if (_stateIsEffective(state, actor)) return state;
   }
   return null;
 }

@@ -53,26 +53,41 @@ function _classifyWeaponType(weaponType) {
 
 let _cprRollClasses = null;
 
-async function _importCPRRolls() {
+/** Probe known places for CPR's roll classes. CPR ships as a bundled `cpr.js`
+ *  so `import()` of source paths doesn't work. We look for the classes on
+ *  globals / game.cpr / CONFIG.Dice.rolls. If CPR doesn't expose them, the
+ *  ephemeral roll states stay disabled (persistent states still work). */
+function _probeCPRRollClasses() {
   if (_cprRollClasses) return _cprRollClasses;
-  try {
-    // Path is fixed by Foundry's module loader.
-    _cprRollClasses = await import("/systems/cyberpunk-red-core/src/modules/rolls/cpr-rolls.js");
-    return _cprRollClasses;
-  } catch (err) {
-    console.error(`${MODULE_ID} | failed to import CPR rolls module:`, err);
+
+  // Common candidate locations
+  const candidates = {
+    CPRRoll:           globalThis.CPRRoll          ?? game.cpr?.rolls?.CPRRoll          ?? game.cpr?.CPRRoll,
+    CPRSkillRoll:      globalThis.CPRSkillRoll     ?? game.cpr?.rolls?.CPRSkillRoll     ?? game.cpr?.CPRSkillRoll,
+    CPRAttackRoll:     globalThis.CPRAttackRoll    ?? game.cpr?.rolls?.CPRAttackRoll    ?? game.cpr?.CPRAttackRoll,
+    CPRDeathSaveRoll:  globalThis.CPRDeathSaveRoll ?? game.cpr?.rolls?.CPRDeathSaveRoll ?? game.cpr?.CPRDeathSaveRoll,
+  };
+
+  // Fallback: search CONFIG.Dice.rolls (CPR may register subclasses there)
+  if (!candidates.CPRRoll && Array.isArray(CONFIG.Dice?.rolls)) {
+    candidates.CPRRoll = CONFIG.Dice.rolls.find(r => r?.name === "CPRRoll");
+  }
+
+  if (typeof candidates.CPRRoll !== "function") {
+    console.warn(`${MODULE_ID} | CPRRoll class not found; ephemeral roll-state detection disabled. ` +
+                 `Persistent states (wounded, unconscious, inCombat, etc.) still work.`);
     return null;
   }
+
+  _cprRollClasses = candidates;
+  return _cprRollClasses;
 }
 
-async function _installRollWrap() {
-  const cprRolls = await _importCPRRolls();
+function _installRollWrap() {
+  const cprRolls = _probeCPRRollClasses();
   if (!cprRolls?.CPRRoll) return false;
 
-  // Expose to a stable global so libWrapper can target by string path.
-  globalThis.__vsat_cpr = { Roll: cprRolls.CPRRoll };
-
-  if (!libWrapper?.register) {
+  if (!globalThis.libWrapper?.register) {
     console.warn(`${MODULE_ID} | libWrapper not available; falling back to direct prototype patch`);
     const orig = cprRolls.CPRRoll.prototype.roll;
     cprRolls.CPRRoll.prototype.roll = async function () {
@@ -80,8 +95,12 @@ async function _installRollWrap() {
       _onRollComplete(this, cprRolls);
       return result;
     };
+    console.log(`${MODULE_ID} | CPRRoll.prototype.roll patched (direct, no libWrapper)`);
     return true;
   }
+
+  // Expose the class to a stable global so libWrapper has a string path target.
+  globalThis.__vsat_cpr = { Roll: cprRolls.CPRRoll };
 
   libWrapper.register(
     MODULE_ID,
@@ -93,6 +112,7 @@ async function _installRollWrap() {
     },
     "WRAPPER"
   );
+  console.log(`${MODULE_ID} | CPRRoll.prototype.roll wrapped via libWrapper`);
   return true;
 }
 
