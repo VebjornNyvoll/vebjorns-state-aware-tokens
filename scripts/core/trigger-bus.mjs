@@ -12,15 +12,33 @@ import { scheduleReevaluate, scheduleReevaluateToken } from "./state-engine.mjs"
 /** Attach all listeners. Idempotent — safe to call once at ready. */
 export function installTriggerBus() {
   // ── Combat lifecycle ─────────────────────────────────────────────────────
-  Hooks.on("combatStart", (combat) => _reevaluateCombatants(combat, "combatStart"));
-  Hooks.on("deleteCombat", (combat) => _reevaluateCombatants(combat, "deleteCombat"));
-  Hooks.on("updateCombat", (combat, changes) => {
-    if (changes.turn !== undefined || changes.round !== undefined) {
-      _reevaluateCombatants(combat, "combatTurn/Round");
+  // Any combat-related event triggers a sweep of every token on the active
+  // scene. This is more aggressive than strictly needed but it's reliable:
+  // when a Combat is deleted, `combat.combatants` may already be empty by
+  // the time the hook fires, so iterating it would miss every token.
+  // Sweeping the active scene's tokens guarantees the engine re-evaluates
+  // their predicates and clears the inCombat state when appropriate.
+  Hooks.on("combatStart",     (combat) => _reevaluateAllInActiveScene("combatStart"));
+  Hooks.on("deleteCombat",    (combat) => _reevaluateAllInActiveScene("deleteCombat"));
+  Hooks.on("updateCombat",    (combat, changes) => {
+    // Re-eval on turn/round/active changes. `active` is the End-Combat signal
+    // in some workflows; turn/round cover normal flow.
+    if (
+      changes.turn   !== undefined ||
+      changes.round  !== undefined ||
+      changes.active !== undefined
+    ) {
+      _reevaluateAllInActiveScene("updateCombat");
     }
   });
-  Hooks.on("createCombatant", (combatant) => _reevaluateCombatant(combatant, "createCombatant"));
-  Hooks.on("deleteCombatant", (combatant) => _reevaluateCombatant(combatant, "deleteCombatant"));
+  Hooks.on("createCombatant", (combatant) => {
+    _reevaluateCombatant(combatant, "createCombatant");
+    _reevaluateAllInActiveScene("createCombatant");
+  });
+  Hooks.on("deleteCombatant", (combatant) => {
+    _reevaluateCombatant(combatant, "deleteCombatant");
+    _reevaluateAllInActiveScene("deleteCombatant");
+  });
 
   // ── Active Effect lifecycle ──────────────────────────────────────────────
   Hooks.on("createActiveEffect", (effect) => _reevaluateActorOfDoc(effect, "createActiveEffect"));
@@ -83,4 +101,17 @@ function _reevaluateActorOfDoc(doc, source) {
   if (doc?.parent instanceof Actor) actor = doc.parent;
   else if (doc?.parent?.parent instanceof Actor) actor = doc.parent.parent;
   if (actor) scheduleReevaluate(actor, { source });
+}
+
+/** Schedule re-evaluation for every token in the active scene that has an
+ *  actor. Used by combat events because at delete-time the affected actors
+ *  aren't always reachable through the combat document anymore. Cheap
+ *  enough for combat events (which are infrequent). */
+function _reevaluateAllInActiveScene(source) {
+  if (!canvas?.scene) return;
+  for (const tokenDoc of canvas.scene.tokens) {
+    if (tokenDoc.actor) {
+      scheduleReevaluateToken(tokenDoc, { source });
+    }
+  }
 }

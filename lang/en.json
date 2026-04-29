@@ -69,6 +69,7 @@
   "VSAT.State.inCombat.Description": "Token is currently in active combat.",
   "VSAT.State.cpr.dead.Description": "CPR: actor explicitly marked as Dead.",
   "VSAT.State.cpr.dying.Description": "CPR: rolling a death save.",
+  "VSAT.State.cpr.rolling.Description": "CPR: any roll is in progress.",
   "VSAT.State.cpr.rolling.deathSave.Description": "CPR: a death save is in progress.",
   "VSAT.State.cpr.rolling.handgun.Description": "CPR: rolling a handgun attack.",
   "VSAT.State.cpr.rolling.shoulderArms.Description": "CPR: rolling a shoulder-arms attack.",
