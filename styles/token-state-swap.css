@@ -1,0 +1,269 @@
+/* State-Aware Tokens — module styles
+   Scoped under @layer modules per Foundry v13 cascade conventions.
+   All selectors prefixed with .vsat to avoid global pollution. */
+
+@layer modules {
+
+  /* ============ Generic ============ */
+
+  .vsat-section-title {
+    font-family: var(--fdry-font-display, "Cinzel", serif);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--fdry-fg-emphatic, #f8efd8);
+    margin: 12px 0 6px;
+  }
+
+  .vsat-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+
+  .vsat-empty {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--fdry-fg-muted, #7a7464);
+  }
+  .vsat-empty-title {
+    font-family: var(--fdry-font-display, "Cinzel", serif);
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--fdry-fg-emphatic, #f8efd8);
+    margin: 0 0 6px;
+    letter-spacing: 0.03em;
+  }
+  .vsat-empty-hint {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--fdry-fg-muted, #7a7464);
+    line-height: 1.5;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  /* ============ Buttons ============ */
+
+  .vsat-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    background: var(--fdry-bg-panel-2, #2b2b31);
+    border: 1px solid var(--fdry-border-light, #3a3a42);
+    border-radius: 3px;
+    color: var(--fdry-fg-primary, #e8e3d8);
+    font-family: var(--fdry-font-sans, "Signika", sans-serif);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 80ms ease, border-color 80ms ease;
+  }
+  .vsat-btn:hover {
+    background: var(--fdry-bg-panel-3, #34343b);
+    border-color: var(--fdry-rule-gold, #a88b3a);
+  }
+  .vsat-btn:active {
+    background: var(--fdry-bg-panel, #232328);
+  }
+  .vsat-btn-primary {
+    background: rgba(199,154,58,0.18);
+    border-color: var(--fdry-rule-gold, #a88b3a);
+    color: var(--fdry-accent-bright, #f1c560);
+    font-weight: 600;
+  }
+  .vsat-btn-primary:hover {
+    background: rgba(199,154,58,0.28);
+  }
+  .vsat-btn-pick,
+  .vsat-btn-clear {
+    width: 28px;
+    padding: 0;
+  }
+
+  /* ============ Actor config ============ */
+
+  .vsat-actor-config-body {
+    padding: 12px 14px;
+  }
+
+  .vsat-state-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .vsat-state-row {
+    display: grid;
+    grid-template-columns: 200px 1fr 80px;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    background: var(--fdry-bg-panel, #232328);
+    border: 1px solid var(--fdry-border-light, #3a3a42);
+    border-radius: 4px;
+  }
+
+  .vsat-state-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .vsat-state-id {
+    font-family: var(--fdry-font-mono, "JetBrains Mono", monospace);
+    font-size: 11px;
+    color: var(--fdry-accent-bright, #f1c560);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .vsat-state-priority {
+    font-family: var(--fdry-font-mono, "JetBrains Mono", monospace);
+    font-size: 9px;
+    color: var(--fdry-fg-muted, #7a7464);
+  }
+  .vsat-state-description {
+    font-size: 10px;
+    font-style: italic;
+    color: var(--fdry-fg-secondary, #b3ad9c);
+    line-height: 1.3;
+  }
+
+  .vsat-state-image {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .vsat-image-preview {
+    width: 36px;
+    height: 36px;
+    flex: none;
+    border-radius: 3px;
+    border: 1px solid var(--fdry-border-light, #3a3a42);
+    background-color: var(--fdry-bg-input, #14141a);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .vsat-image-preview-empty {
+    border-style: dashed;
+    color: var(--fdry-fg-muted, #7a7464);
+  }
+  .vsat-image-empty-label {
+    font-size: 8px;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .vsat-image-input {
+    flex: 1;
+    height: 26px;
+    background: var(--fdry-bg-input, #14141a);
+    border: 1px solid var(--fdry-border-input, #1c1c22);
+    border-radius: 3px;
+    color: var(--fdry-fg-primary, #e8e3d8);
+    font-family: var(--fdry-font-mono, "JetBrains Mono", monospace);
+    font-size: 11px;
+    padding: 0 6px;
+    min-width: 0;
+  }
+  .vsat-image-input:focus {
+    outline: none;
+    border-color: var(--fdry-rule-gold, #a88b3a);
+  }
+
+  .vsat-state-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+
+  .vsat-form-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 12px 0 4px;
+    margin-top: 10px;
+    border-top: 1px solid var(--fdry-border-light, #3a3a42);
+  }
+
+  /* ============ Module settings ============ */
+
+  .vsat-settings-body {
+    padding: 12px 14px;
+  }
+  .vsat-settings-section {
+    margin-bottom: 18px;
+  }
+  .vsat-pack-current {
+    margin: 6px 0;
+    font-size: 12px;
+  }
+  .vsat-pack-current strong {
+    margin-right: 6px;
+    color: var(--fdry-fg-secondary, #b3ad9c);
+  }
+  .vsat-pack-current span {
+    color: var(--fdry-accent-bright, #f1c560);
+    font-weight: 600;
+  }
+
+  .vsat-settings-shims-list {
+    list-style: disc;
+    padding-left: 20px;
+    margin: 6px 0;
+  }
+  .vsat-settings-shims-list li {
+    font-size: 12px;
+    color: var(--fdry-fg-primary, #e8e3d8);
+    line-height: 1.6;
+  }
+  .vsat-settings-shims-list code {
+    background: var(--fdry-bg-input, #14141a);
+    padding: 1px 4px;
+    border-radius: 2px;
+    color: var(--fdry-accent-bright, #f1c560);
+    font-size: 11px;
+  }
+
+  .vsat-settings-states-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .vsat-settings-states-table th,
+  .vsat-settings-states-table td {
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid var(--fdry-border-light, #3a3a42);
+  }
+  .vsat-settings-states-table th {
+    color: var(--fdry-fg-muted, #7a7464);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+  }
+  .vsat-settings-states-table code {
+    color: var(--fdry-accent-bright, #f1c560);
+    font-family: var(--fdry-font-mono, "JetBrains Mono", monospace);
+  }
+  .vsat-priority-cell {
+    font-family: var(--fdry-font-mono, "JetBrains Mono", monospace);
+    color: var(--fdry-fg-muted, #7a7464);
+  }
+  .vsat-state-ephemeral td {
+    color: var(--fdry-fg-secondary, #b3ad9c);
+    font-style: italic;
+  }
+
+}

@@ -1,0 +1,74 @@
+<div class="vsat-actor-config-body">
+
+  {{#unless hasStates}}
+    <div class="vsat-empty">
+      <h3 class="vsat-empty-title">{{localize "VSAT.ActorConfig.NoStates.Title"}}</h3>
+      <p class="vsat-empty-hint">{{localize "VSAT.ActorConfig.NoStates.Hint"}}</p>
+    </div>
+  {{else}}
+
+    <div class="form-group">
+      <label class="vsat-checkbox-label">
+        <input type="checkbox" name="disabled" {{#if disabled}}checked{{/if}}>
+        <span>{{localize "VSAT.ActorConfig.Disabled.Name"}}</span>
+      </label>
+      <p class="hint">{{localize "VSAT.ActorConfig.Disabled.Hint"}}</p>
+    </div>
+
+    <h3 class="vsat-section-title">{{localize "VSAT.ActorConfig.SectionStandard"}}</h3>
+
+    <div class="vsat-state-list">
+      {{#each states}}
+        <div class="vsat-state-row" data-state-id="{{this.id}}">
+          <div class="vsat-state-meta">
+            <code class="vsat-state-id">{{this.id}}</code>
+            <span class="vsat-state-priority" title="Priority">{{this.priority}}</span>
+            {{#if this.description}}
+              <span class="vsat-state-description">{{this.description}}</span>
+            {{/if}}
+          </div>
+
+          <div class="vsat-state-image">
+            <div class="vsat-image-preview {{#unless this.image}}vsat-image-preview-empty{{/unless}}"
+                 {{#if this.image}}style='background-image: url("{{this.image}}")'{{/if}}>
+              {{#unless this.image}}
+                <span class="vsat-image-empty-label">{{localize "VSAT.ActorConfig.NoImage"}}</span>
+              {{/unless}}
+            </div>
+            <input type="text"
+                   name="images.{{this.id}}"
+                   value="{{this.image}}"
+                   placeholder="path/to/image.webp"
+                   class="vsat-image-input">
+          </div>
+
+          <div class="vsat-state-actions">
+            <button type="button"
+                    class="vsat-btn vsat-btn-pick"
+                    data-action="pickImage"
+                    data-state-id="{{this.id}}"
+                    title="{{localize 'VSAT.ActorConfig.PickImage'}}">
+              <i class="fa-solid fa-folder-open"></i>
+            </button>
+            <button type="button"
+                    class="vsat-btn vsat-btn-clear"
+                    data-action="clearImage"
+                    data-state-id="{{this.id}}"
+                    title="{{localize 'VSAT.ActorConfig.ClearImage'}}">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+      {{/each}}
+    </div>
+
+  {{/unless}}
+
+  <footer class="vsat-form-footer">
+    <button type="submit" class="vsat-btn vsat-btn-primary">
+      <i class="fa-solid fa-floppy-disk"></i>
+      {{localize "VSAT.ActorConfig.Save"}}
+    </button>
+  </footer>
+
+</div>

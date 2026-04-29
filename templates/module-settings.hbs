@@ -1,0 +1,58 @@
+<div class="vsat-settings-body">
+
+  <section class="vsat-settings-section">
+    <h3 class="vsat-section-title">{{localize "VSAT.SettingsApp.SectionPacks"}}</h3>
+    <p>{{localize "VSAT.Settings.AppliedPack.Hint"}}</p>
+    <p class="vsat-pack-current">
+      <strong>{{localize "VSAT.SettingsApp.CurrentPack"}}</strong>
+      <span>{{currentPack}}</span>
+    </p>
+    <p class="hint">
+      To change the active pack, edit the <em>Active Preset Pack</em> setting in
+      Foundry's standard module settings. Changing requires a world reload.
+    </p>
+  </section>
+
+  <section class="vsat-settings-section">
+    <h3 class="vsat-section-title">{{localize "VSAT.SettingsApp.SectionShims"}}</h3>
+    <p class="hint">Active system: <code>{{systemId}}</code></p>
+    {{#if hasShims}}
+      <ul class="vsat-settings-shims-list">
+        {{#each shims}}
+          <li><code>{{this.tag}}</code> &mdash; {{this.count}} state{{#unless (eq this.count 1)}}s{{/unless}}</li>
+        {{/each}}
+      </ul>
+    {{else}}
+      <p>{{localize "VSAT.SettingsApp.NoShims"}}</p>
+    {{/if}}
+  </section>
+
+  <section class="vsat-settings-section">
+    <h3 class="vsat-section-title">{{localize "VSAT.SettingsApp.SectionRegisteredStates"}}</h3>
+    {{#if hasStates}}
+      <table class="vsat-settings-states-table">
+        <thead>
+          <tr>
+            <th>{{localize "VSAT.SettingsApp.ColumnId"}}</th>
+            <th>{{localize "VSAT.SettingsApp.ColumnPriority"}}</th>
+            <th>{{localize "VSAT.SettingsApp.ColumnSystem"}}</th>
+            <th>{{localize "VSAT.SettingsApp.ColumnDescription"}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each states}}
+            <tr class="{{#if this.ephemeral}}vsat-state-ephemeral{{/if}}">
+              <td><code>{{this.id}}</code></td>
+              <td class="vsat-priority-cell">{{this.priority}}</td>
+              <td>{{this.systemTag}}</td>
+              <td>{{this.description}}</td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    {{else}}
+      <p>{{localize "VSAT.SettingsApp.NoStates"}}</p>
+    {{/if}}
+  </section>
+
+</div>
