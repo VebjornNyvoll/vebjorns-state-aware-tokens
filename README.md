@@ -1,129 +1,106 @@
 # State-Aware Tokens
 
-A Foundry VTT module that automatically swaps a token's image (and other token visuals) based on game-state conditions: in combat, wounded, unconscious, rolling a specific skill, etc. **Priority-ordered state machine with per-actor configuration.** System-agnostic core; ships with a Cyberpunk Red Core integration shim. Extensible via a public API for other systems.
+A Foundry VTT module that automatically swaps a token's image (and other token visuals) based on game-state conditions. Priority-ordered state machine. Per-actor configuration. System-agnostic core that can be extended with system shims; ships with a Cyberpunk Red Core shim for v0.1.
 
-> **Status: v0.1.0 (initial release).** Core engine, CPR shim, per-actor image picker, recommended pack auto-applied. Custom-state UI (Compound / HP threshold / Status effect) and light-field UI ship in v0.1.1.
+> **Status: v0.1.0** — core engine + CPR shim + per-actor image picker + recommended CPR Combat Pack.
+
+## What it does
+
+Tokens swap their art based on conditions. Examples:
+
+- HP drops to 0 → `unconscious` state wins → swap to bloody-prone art
+- Actor enters combat → `inCombat` state wins → swap to combat-ready stance
+- Player rolls a handgun attack in CPR → `cpr.rolling.handgun` state wins for ~2 seconds → swap to firing pose, then return
+
+Each state has a priority. The highest-priority state whose condition is true *right now* wins, and its mutations apply to the token. When all states clear, the token returns to its original art.
 
 ## Install
 
-In Foundry VTT, paste this manifest URL into Add-on Modules → Install Module:
+In Foundry → Add-on Modules → Install Module → Manifest URL:
 
 ```
 https://github.com/VebjornNyvoll/vebjorns-state-aware-tokens/releases/latest/download/module.json
 ```
 
-Required dependency: **libWrapper** (`lib-wrapper`).
-Recommended: **socketlib** (`socketlib`).
+Required dependency: **libWrapper**.
 
-## Concept
+## Usage
 
-Each token has a "winning state" — the highest-priority registered state whose predicate currently returns true for that actor. When the winning state changes, the token's image (and optionally other fields) swap to the user-configured visual for that state.
+1. Enable the module in your world.
+2. Open any actor sheet. Click the **State-Aware Tokens** header button (theatrical-mask icon, GM only).
+3. Pick an image for each registered state. Image and webm formats both work.
+4. Save. Place a token of that actor on a scene. Trigger the conditions (take damage, enter combat, make a roll). Watch it swap.
 
-States are registered by **system shims**:
+## How it works (mental model)
 
-- **`unconscious`** — actor is at HP 0 (CPR's `mortallyWounded` maps to this)
-- **`bloodied`** — actor is at half HP or below (CPR's `seriouslyWounded`)
-- **`wounded`** — actor has taken damage but isn't bloodied
-- **`dead`** — actor is dead
-- **`inCombat`** — actor is in active combat
-- **`cpr.rolling.handgun`** — ephemeral, fires while a CPR handgun attack is rolling
-- **`cpr.rolling.shoulderArms`** — ephemeral, fires for ranged shoulder weapons
-- **`cpr.rolling.melee`** — ephemeral, fires for melee attacks
-- **`cpr.rolling.skill`** — ephemeral, fires for skill checks
-- **`cpr.rolling.deathSave`** — ephemeral, fires while a death save is rolling
+- A **state** is `{id, priority, predicate(actor), apply}`. The predicate is a pure function — given an actor, returns true if the state currently applies.
+- The **engine** listens to Foundry hooks (combat, AE, actor update) and to system-shim-fired custom hooks. When triggered, it re-evaluates every registered state's predicate for the affected actor.
+- The **first match wins** — highest-priority state whose predicate returns true is the winning state. Its mutations apply.
+- When the winning state changes, the engine snapshots the original token values (so we can restore later) and writes the new ones via `tokenDoc.update()`.
+- When no state matches, the engine restores from snapshot.
 
-Higher-priority states win. If two states match at the same priority, the order of registration decides — but typically system shims declare priorities so this doesn't happen.
+This is a [first-match priority resolution](https://en.wikipedia.org/wiki/Priority_queue) state machine, the same model used by `Token Variants Art`.
 
-## Configure per actor
+## Coexistence with other token modules
 
-Open any actor sheet → header button **"State-Aware Tokens"** → for each registered state, pick the image you want shown when that state is winning. Save.
+This module **defers** to Token Variants Art, Visage, and Active Token Lighting by default. If any of those modules has set its snapshot flag on a token, we skip image mutations on that token (we'll still apply non-image effects like `light.*`).
 
-Per-actor config is stored at `actor.flags.vebjorns-state-aware-tokens.images`.
+You can change this in the module settings (`coexistenceMode = clobber` or `warn`). `defer` is recommended.
 
-## Module settings
+## CPR shim
 
-Foundry → Game Settings → Configure Settings → State-Aware Tokens:
+Out of the box, the CPR shim registers these states on Cyberpunk Red Core worlds:
+
+| State ID | Priority | Triggers when |
+|---|---|---|
+| `dead` / `cpr.dead` | 1000/990 | `actor.system.derivedStats.currentWoundState === "dead"` (GM-set; CPR never auto-sets) |
+| `cpr.rolling.deathSave` | 950 | Death save roll in flight (~3 s) |
+| `unconscious` | 900 | `currentWoundState === "mortallyWounded"` (HP < 1) |
+| `bloodied` | 700 | `currentWoundState === "seriouslyWounded"` (HP < ceil(maxHP/2)) |
+| `cpr.rolling.handgun` | 350 | Handgun attack roll in flight (~2 s) |
+| `cpr.rolling.shoulderArms` | 350 | Shoulder-arms attack roll in flight (~2 s) |
+| `cpr.rolling.melee` | 350 | Melee attack roll in flight (~2 s) |
+| `cpr.rolling.skill` | 300 | Generic skill roll in flight (~1.5 s) |
+| `wounded` | 200 | `currentWoundState === "lightlyWounded"` |
+| `inCombat` | 100 | Token has a combatant in any active combat |
+
+CPR fires zero custom hooks of its own, so the rolling-* states are detected via libWrapper-wrapping CPR's `CPRRoll.prototype.roll`. This is fragile-ish (CPR could rename the class) but stable across the v0.92.x line as of 2026-04.
+
+## Configuration
 
 | Setting | Scope | Default | Description |
 |---|---|---|---|
-| Coexistence Mode | World | `defer` | What to do when another module (TVA, Visage, ATL) is also managing the token's image. `defer` = let them win, we apply non-image fields only. `clobber` = override. `warn` = notify GM once, then defer. |
-| Default Animation Duration | World | `0` (instant) | Cross-fade duration in milliseconds. Recommended `0` for animated webm tokens. |
-| Active Preset Pack | World | (system-driven) | Bundle of states with sensible priorities. Auto-applied based on system. |
-| Enable for Player-Owned Tokens | World | `false` | If on, players see swaps for tokens they own. Default GM-only. |
-| Debug Logging | Client | `false` | Verbose console logging. |
+| Coexistence Mode | World (GM) | `defer` | What to do when another token-art module owns the image |
+| Default Animation Duration | World (GM) | `0` (instant) | Cross-fade duration in ms when swapping |
+| Enable for Player-Owned Tokens | World (GM) | `false` | If on, players see swaps for tokens they own |
+| Active Preset Pack | World (GM) | `(none)` | Built-in: "Recommended CPR Combat Pack" |
+| Debug Logging | Client | `false` | Verbose console output |
 
 ## Public API
 
-Other modules can register custom states or system integrations:
-
 ```js
-// At your module's "ready" hook (after vebjorns-state-aware-tokens has fired its systemReady):
-Hooks.once("vebjorns-state-aware-tokens.systemReady", (api) => {
-  api.addState({
-    id: "myCustomState",
-    priority: 400,
-    predicate: (actor) => actor.system.someValue > 100,
-    triggers: [{ hook: "updateActor" }],
-    description: "My custom state.",
-  });
-});
+// game.vsat = game.vebjornsStateAwareTokens
+game.vsat.api.addState({ id, priority, predicate, apply, ... });
+game.vsat.api.addSystemIntegration({ systemId, states });
+game.vsat.api.getActiveState(token);
+game.vsat.api.reevaluate(token);
+
+// Custom hooks fired by the module:
+Hooks.on(game.vsat.api.HOOKS.STATE_CHANGED, (token, prior, current) => {});
+Hooks.on(game.vsat.api.HOOKS.BEFORE_APPLY, (token, state, changes) => { /* return false to cancel */ });
+Hooks.on(game.vsat.api.HOOKS.AFTER_APPLY, (token, state, changes) => {});
 ```
-
-Full API:
-
-```js
-game.vsat.addState(stateDef)                   // register one state
-game.vsat.addSystemIntegration({ systemId, states }) // register a bundle
-game.vsat.addStatePack(pack)                   // register a curated pack
-game.vsat.getActiveState(token)                // current winning state id
-game.vsat.getRegisteredStates()                // all registered states
-game.vsat.isStateActive(token, "unconscious")  // boolean
-game.vsat.reevaluate(token)                    // force re-eval
-game.vsat.reevaluateActor(actor)               // re-eval for all of actor's tokens
-game.vsat.forceState(token, "unconscious")     // GM debug
-game.vsat.clearOverrides(token)                // restore original art
-
-// Hooks fired:
-game.vsat.HOOKS.SYSTEM_READY        // shim registration window
-game.vsat.HOOKS.STATE_CHANGED       // (token, prior, current)
-game.vsat.HOOKS.BEFORE_APPLY        // (token, state, changes) — cancellable
-game.vsat.HOOKS.AFTER_APPLY         // (token, state, changes)
-```
-
-## How states are evaluated
-
-A state's `predicate(actor, ctx)` is called whenever any of its `triggers` fire. The triggers are Foundry hooks like `updateActor`, `createCombatant`, `deleteActiveEffect`, etc. The engine over-evaluates intentionally: when *any* trigger fires for an actor, *all* states are re-evaluated and the highest-priority match wins.
-
-States can be **persistent** (predicate is read on every trigger) or **ephemeral** (auto-clears after `durationMs`). Ephemeral states are how the CPR shim represents "currently rolling X" — the shim fires our internal `systemEvent` hook on roll completion, which marks the state active for ~2 seconds and then auto-clears.
-
-## Snapshot / restore
-
-Before our first swap on a token, we read its current `texture.src` (and other fields we may mutate) into `tokenDocument.flags.vebjorns-state-aware-tokens.snapshot`. When all states clear, we restore from snapshot. This means each individual token of an actor restores to its own original art (e.g., `private-1.webm`, `private-2.webm`, `private-3.webm` each go back to their unique idle image — no cross-contamination).
-
-## Coexistence with other token-management modules
-
-Detected at apply time:
-
-- **Token Variants Art** — checks `flags.token-variants.defaultImg`
-- **Visage** — checks `flags.visage.activeStack` / `flags.visage.tokenSnapshot`
-- **Active Token Lighting (ATL)** — checks `flags.ATL.originals`
-
-When any of these are managing a token, our `defer` policy (default) skips image fields and applies only non-image fields (light, etc.). This avoids corrupting their snapshot/rollback flow.
-
-## Cyberpunk Red Core integration
-
-CPR fires no custom hooks for its rolls. The shim dynamically imports CPR's roll module (`/systems/cyberpunk-red-core/src/modules/rolls/cpr-rolls.js`) and uses libWrapper to wrap `CPRRoll.prototype.roll`. When a roll completes, the shim inspects `roll instanceof CPRAttackRoll`, the `weaponType` property, etc. to classify the roll into one of the `cpr.rolling.*` states. The state is active for 2 seconds (1.5 for skill rolls) and auto-clears.
-
-CPR wound state is read directly from `actor.system.derivedStats.currentWoundState` — CPR doesn't represent wound states as Foundry status effects, so `actor.statuses` won't contain them.
-
-## License
-
-MIT.
 
 ## Roadmap
 
-**v0.1.1** — light-field UI (per-state torch/glow configuration); custom-state UI: Compound (`A AND B`), HP threshold (`< 25%`), Status effect (`actor.statuses.has("prone")`).
+**v0.2** — UI for user-created custom states (compound, HP threshold, status effect), light-field UI in the actor config, per-token override UI.
 
-**v0.2** — per-token override UI; alpha/scale/tint mutations; pack switcher with curated alternatives.
+**v0.3** — UI-driven custom states with sandboxed JS predicates, more system shims (dnd5e, pf2e), Compendium-driven state packs.
 
-**v0.3** — additional system shims (dnd5e, pf2e); custom-state arbitrary-JS-expression for power users (sandboxed).
+## Architecture
+
+Built per the [`foundry-vtt-module`](https://github.com/VebjornNyvoll/) skill conventions. Three-plane separation: engine ≠ shims ≠ user config. No monkey-patching in the engine; shims may use libWrapper for system internals (CPR forces this). CSS scoped under `.vsat-*` and wrapped in `@layer modules`.
+
+## License
+
+MIT — see LICENSE.

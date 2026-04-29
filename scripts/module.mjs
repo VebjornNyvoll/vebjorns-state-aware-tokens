@@ -11,6 +11,8 @@
 
 export const MODULE_ID = "vebjorns-state-aware-tokens";
 
+console.log(`${MODULE_ID} | module.mjs loaded`);
+
 import { installTriggerBus } from "./core/trigger-bus.mjs";
 import {
   registerState,

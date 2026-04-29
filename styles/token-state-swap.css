@@ -1,116 +1,153 @@
-/* State-Aware Tokens — module styles
-   Scoped under @layer modules per Foundry v13 cascade conventions.
-   All selectors prefixed with .vsat to avoid global pollution. */
+/* ============================================================
+   State-Aware Tokens — module styles
+   Scoped under .vsat-* and wrapped in @layer modules so Foundry's
+   v13 cascade ordering is respected. Tokens follow the
+   vebjorns-modules-design-system conventions where applicable.
+   ============================================================ */
 
 @layer modules {
 
-  /* ============ Generic ============ */
-
-  .vsat-section-title {
-    font-family: var(--fdry-font-display, "Cinzel", serif);
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--fdry-fg-emphatic, #f8efd8);
-    margin: 12px 0 6px;
+  /* ── Tokens (mirror the design-system) ─────────────────────────── */
+  .vsat,
+  .vsat-actor-config,
+  .vsat-settings {
+    --vsat-bg-window:    #1a1a1d;
+    --vsat-bg-panel:     #232328;
+    --vsat-bg-panel-2:   #2b2b31;
+    --vsat-bg-panel-3:   #34343b;
+    --vsat-bg-input:     #14141a;
+    --vsat-fg-primary:   #e8e3d8;
+    --vsat-fg-secondary: #b3ad9c;
+    --vsat-fg-muted:     #7a7464;
+    --vsat-fg-emphatic:  #f8efd8;
+    --vsat-rule-gold:    #a88b3a;
+    --vsat-rule-gold-bright: #d4af56;
+    --vsat-border-light: #3a3a42;
+    --vsat-accent:       #c79a3a;
+    --vsat-accent-bright:#f1c560;
+    --vsat-accent-crimson: #a23a3a;
+    --vsat-shadow-emboss: inset 0 1px 0 rgba(255,220,160,0.06),
+                          inset 0 -1px 0 rgba(0,0,0,0.4);
+    --vsat-shadow-inset: inset 0 1px 2px rgba(0,0,0,0.6);
+    --vsat-radius-card: 5px;
+    --vsat-radius-input: 4px;
+    --vsat-radius-button: 3px;
   }
 
-  .vsat-checkbox-label {
-    display: inline-flex;
+  /* ── Actor config app ─────────────────────────────────────────── */
+  .vsat-actor-config-body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 12px 14px 14px;
+    color: var(--vsat-fg-primary);
+    font-family: var(--fdry-font-sans, "Signika", ui-sans-serif, "Segoe UI", sans-serif);
+  }
+
+  .vsat-actor-header {
+    display: flex;
+    gap: 12px;
     align-items: center;
-    gap: 8px;
-    cursor: pointer;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--vsat-rule-gold);
   }
-
-  .vsat-empty {
-    text-align: center;
-    padding: 40px 24px;
-    color: var(--fdry-fg-muted, #7a7464);
+  .vsat-actor-portrait {
+    width: 56px;
+    height: 56px;
+    border-radius: 4px;
+    border: 1px solid var(--vsat-rule-gold);
+    box-shadow: var(--vsat-shadow-emboss);
+    object-fit: cover;
+    background: var(--vsat-bg-panel);
   }
-  .vsat-empty-title {
+  .vsat-actor-meta { display: flex; flex-direction: column; gap: 2px; }
+  .vsat-actor-name {
     font-family: var(--fdry-font-display, "Cinzel", serif);
     font-weight: 700;
     font-size: 18px;
-    color: var(--fdry-fg-emphatic, #f8efd8);
-    margin: 0 0 6px;
-    letter-spacing: 0.03em;
+    margin: 0;
+    color: var(--vsat-fg-emphatic);
+    letter-spacing: 0.04em;
   }
-  .vsat-empty-hint {
-    font-size: 12px;
-    font-style: italic;
-    color: var(--fdry-fg-muted, #7a7464);
-    line-height: 1.5;
-    max-width: 420px;
-    margin: 0 auto;
+  .vsat-actor-subtype {
+    font-size: 11px;
+    margin: 0;
+    color: var(--vsat-fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
 
-  /* ============ Buttons ============ */
-
-  .vsat-btn {
+  .vsat-actor-toggle {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border: none;
+    padding: 6px 0;
+    margin: 0;
+  }
+  .vsat-checkbox {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
     gap: 6px;
-    height: 28px;
-    padding: 0 10px;
-    background: var(--fdry-bg-panel-2, #2b2b31);
-    border: 1px solid var(--fdry-border-light, #3a3a42);
-    border-radius: 3px;
-    color: var(--fdry-fg-primary, #e8e3d8);
-    font-family: var(--fdry-font-sans, "Signika", sans-serif);
-    font-size: 12px;
     cursor: pointer;
-    transition: background-color 80ms ease, border-color 80ms ease;
+    font-size: 13px;
   }
-  .vsat-btn:hover {
-    background: var(--fdry-bg-panel-3, #34343b);
-    border-color: var(--fdry-rule-gold, #a88b3a);
-  }
-  .vsat-btn:active {
-    background: var(--fdry-bg-panel, #232328);
-  }
-  .vsat-btn-primary {
-    background: rgba(199,154,58,0.18);
-    border-color: var(--fdry-rule-gold, #a88b3a);
-    color: var(--fdry-accent-bright, #f1c560);
-    font-weight: 600;
-  }
-  .vsat-btn-primary:hover {
-    background: rgba(199,154,58,0.28);
-  }
-  .vsat-btn-pick,
-  .vsat-btn-clear {
-    width: 28px;
-    padding: 0;
+  .vsat-checkbox input[type="checkbox"] { margin: 0; }
+  .vsat-hint {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--vsat-fg-muted);
+    margin: 0;
   }
 
-  /* ============ Actor config ============ */
-
-  .vsat-actor-config-body {
-    padding: 12px 14px;
+  .vsat-section-head {
+    font-family: var(--fdry-font-display, "Cinzel", serif);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--vsat-fg-emphatic);
+    letter-spacing: 0.04em;
+    margin: 6px 0 4px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--vsat-border-light);
   }
 
+  /* ── State list ───────────────────────────────────────────────── */
   .vsat-state-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    max-height: 380px;
+    gap: 4px;
+    max-height: 300px;
     overflow-y: auto;
     padding-right: 4px;
   }
 
   .vsat-state-row {
     display: grid;
-    grid-template-columns: 200px 1fr 80px;
+    grid-template-columns: 1fr 60px 1.6fr 76px;
+    gap: 8px;
     align-items: center;
-    gap: 10px;
     padding: 6px 8px;
-    background: var(--fdry-bg-panel, #232328);
-    border: 1px solid var(--fdry-border-light, #3a3a42);
-    border-radius: 4px;
+    background: var(--vsat-bg-panel);
+    border: 1px solid var(--vsat-border-light);
+    border-radius: var(--vsat-radius-card);
+    box-shadow: var(--vsat-shadow-emboss);
+    font-size: 12px;
+  }
+  .vsat-state-row:hover { border-color: var(--vsat-rule-gold); }
+
+  .vsat-state-row.vsat-state-header {
+    background: var(--vsat-bg-deepest, #0e0e10);
+    border-color: var(--vsat-rule-gold);
+    color: var(--vsat-fg-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    font-size: 10px;
+    box-shadow: none;
+    cursor: default;
   }
 
-  .vsat-state-meta {
+  .vsat-col-state {
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -118,152 +155,155 @@
   }
   .vsat-state-id {
     font-family: var(--fdry-font-mono, "JetBrains Mono", monospace);
-    font-size: 11px;
-    color: var(--fdry-accent-bright, #f1c560);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: var(--vsat-accent-bright);
+    font-weight: 700;
+    font-size: 12px;
+    word-break: break-all;
   }
-  .vsat-state-priority {
-    font-family: var(--fdry-font-mono, "JetBrains Mono", monospace);
+  .vsat-state-tag {
     font-size: 9px;
-    color: var(--fdry-fg-muted, #7a7464);
+    color: var(--vsat-fg-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
-  .vsat-state-description {
+  .vsat-state-desc {
     font-size: 10px;
+    color: var(--vsat-fg-secondary);
     font-style: italic;
-    color: var(--fdry-fg-secondary, #b3ad9c);
     line-height: 1.3;
   }
 
-  .vsat-state-image {
-    display: flex;
+  .vsat-col-priority {
+    font-family: var(--fdry-font-mono, monospace);
+    text-align: center;
+    color: var(--vsat-fg-muted);
+    font-size: 11px;
+  }
+
+  .vsat-col-image { min-width: 0; }
+  .vsat-image-cell {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    gap: 6px;
     align-items: center;
-    gap: 8px;
-    min-width: 0;
   }
   .vsat-image-preview {
     width: 36px;
     height: 36px;
-    flex: none;
-    border-radius: 3px;
-    border: 1px solid var(--fdry-border-light, #3a3a42);
-    background-color: var(--fdry-bg-input, #14141a);
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border-radius: var(--vsat-radius-input);
+    background: var(--vsat-bg-panel-2) center/cover no-repeat;
+    border: 1px solid var(--vsat-border-light);
+    box-shadow: var(--vsat-shadow-inset);
   }
   .vsat-image-preview-empty {
-    border-style: dashed;
-    color: var(--fdry-fg-muted, #7a7464);
-  }
-  .vsat-image-empty-label {
-    font-size: 8px;
-    text-align: center;
-    line-height: 1.1;
+    background: repeating-linear-gradient(
+      45deg,
+      var(--vsat-bg-panel-2),
+      var(--vsat-bg-panel-2) 4px,
+      var(--vsat-bg-panel) 4px,
+      var(--vsat-bg-panel) 8px
+    );
   }
   .vsat-image-input {
-    flex: 1;
-    height: 26px;
-    background: var(--fdry-bg-input, #14141a);
-    border: 1px solid var(--fdry-border-input, #1c1c22);
-    border-radius: 3px;
-    color: var(--fdry-fg-primary, #e8e3d8);
-    font-family: var(--fdry-font-mono, "JetBrains Mono", monospace);
-    font-size: 11px;
-    padding: 0 6px;
+    background: var(--vsat-bg-input);
+    border: 1px solid var(--vsat-border-light);
+    border-radius: var(--vsat-radius-input);
+    padding: 4px 6px;
+    color: var(--vsat-fg-primary);
+    font-family: var(--fdry-font-mono, monospace);
+    font-size: 10px;
+    box-shadow: var(--vsat-shadow-inset);
     min-width: 0;
   }
   .vsat-image-input:focus {
     outline: none;
-    border-color: var(--fdry-rule-gold, #a88b3a);
+    border-color: var(--vsat-rule-gold);
+    box-shadow: 0 0 0 2px rgba(199,154,58,0.4), var(--vsat-shadow-inset);
   }
 
-  .vsat-state-actions {
+  .vsat-col-actions {
     display: flex;
     gap: 4px;
     justify-content: flex-end;
   }
 
-  .vsat-form-footer {
+  /* ── Buttons ──────────────────────────────────────────────────── */
+  .vsat-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 28px;
+    min-width: 28px;
+    padding: 0 8px;
+    background: var(--vsat-bg-panel-2);
+    border: 1px solid var(--vsat-border-light);
+    border-radius: var(--vsat-radius-button);
+    color: var(--vsat-fg-primary);
+    font-family: var(--fdry-font-sans, "Signika", sans-serif);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 80ms, border-color 80ms;
+  }
+  .vsat-btn:hover {
+    background: var(--vsat-bg-panel-3);
+    border-color: var(--vsat-rule-gold);
+  }
+  .vsat-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(241,197,96,0.55);
+  }
+  .vsat-btn-primary {
+    background: linear-gradient(180deg, var(--vsat-accent) 0%, #a8801f 100%);
+    border-color: var(--vsat-rule-gold-bright);
+    color: #1a1a1d;
+    text-shadow: 0 1px 0 rgba(255,255,200,0.25);
+    padding: 0 14px;
+    height: 32px;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+  .vsat-btn-primary:hover {
+    background: linear-gradient(180deg, var(--vsat-accent-bright) 0%, var(--vsat-accent) 100%);
+  }
+  .vsat-btn-danger { color: var(--vsat-accent-crimson); }
+  .vsat-btn-danger:hover { color: white; background: var(--vsat-accent-crimson); border-color: var(--vsat-accent-crimson); }
+
+  .vsat-actor-footer {
     display: flex;
     justify-content: flex-end;
-    padding: 12px 0 4px;
-    margin-top: 10px;
-    border-top: 1px solid var(--fdry-border-light, #3a3a42);
+    gap: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--vsat-border-light);
   }
 
-  /* ============ Module settings ============ */
-
-  .vsat-settings-body {
-    padding: 12px 14px;
+  /* ── Empty state ──────────────────────────────────────────────── */
+  .vsat-empty {
+    padding: 20px;
+    text-align: center;
+    color: var(--vsat-fg-muted);
+    border: 2px dashed var(--vsat-border-light);
+    border-radius: 6px;
+    background: var(--vsat-bg-panel);
   }
-  .vsat-settings-section {
-    margin-bottom: 18px;
+  .vsat-empty h4 {
+    font-family: var(--fdry-font-display, "Cinzel", serif);
+    font-weight: 700;
+    color: var(--vsat-fg-emphatic);
+    margin: 0 0 6px;
+    letter-spacing: 0.03em;
   }
-  .vsat-pack-current {
-    margin: 6px 0;
+  .vsat-empty p {
     font-size: 12px;
-  }
-  .vsat-pack-current strong {
-    margin-right: 6px;
-    color: var(--fdry-fg-secondary, #b3ad9c);
-  }
-  .vsat-pack-current span {
-    color: var(--fdry-accent-bright, #f1c560);
-    font-weight: 600;
-  }
-
-  .vsat-settings-shims-list {
-    list-style: disc;
-    padding-left: 20px;
-    margin: 6px 0;
-  }
-  .vsat-settings-shims-list li {
-    font-size: 12px;
-    color: var(--fdry-fg-primary, #e8e3d8);
-    line-height: 1.6;
-  }
-  .vsat-settings-shims-list code {
-    background: var(--fdry-bg-input, #14141a);
-    padding: 1px 4px;
-    border-radius: 2px;
-    color: var(--fdry-accent-bright, #f1c560);
-    font-size: 11px;
-  }
-
-  .vsat-settings-states-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 11px;
-  }
-  .vsat-settings-states-table th,
-  .vsat-settings-states-table td {
-    padding: 4px 6px;
-    text-align: left;
-    border-bottom: 1px solid var(--fdry-border-light, #3a3a42);
-  }
-  .vsat-settings-states-table th {
-    color: var(--fdry-fg-muted, #7a7464);
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 9px;
-    letter-spacing: 0.06em;
-  }
-  .vsat-settings-states-table code {
-    color: var(--fdry-accent-bright, #f1c560);
-    font-family: var(--fdry-font-mono, "JetBrains Mono", monospace);
-  }
-  .vsat-priority-cell {
-    font-family: var(--fdry-font-mono, "JetBrains Mono", monospace);
-    color: var(--fdry-fg-muted, #7a7464);
-  }
-  .vsat-state-ephemeral td {
-    color: var(--fdry-fg-secondary, #b3ad9c);
     font-style: italic;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* ── Sheet header button styling ──────────────────────────────── */
+  .vsat-open-config i {
+    color: var(--vsat-accent-bright);
   }
 
 }
